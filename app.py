@@ -1,51 +1,41 @@
-# app.py — Streamlit app to check Scopus quartiles of citing journals from uploaded CSV
+#app.py — Streamlit app to check Scopus quartiles of citing journals (NO CSV required)
 
-import streamlit as st
-import pandas as pd
+import streamlit as st import pandas as pd
 
-st.title("Citing Journals Scopus Quartile Checker (CSV-Based)")
+Simulated citation data
 
-# Step 1: Upload CSV file
-uploaded_file = st.file_uploader("Upload CSV with columns: DOI, Cited By Journal, Year, Quartile", type=["csv"])
+citation_data = [ {"DOI": "10.48161/qaj.v4n3a918", "Cited By Journal": "IEEE Access", "Year": 2023, "Quartile": "Q1"}, {"DOI": "10.48161/qaj.v4n3a773", "Cited By Journal": "Heliyon", "Year": 2022, "Quartile": "Q2"}, {"DOI": "10.48161/qaj.v4n3a773", "Cited By Journal": "Scientific Reports", "Year": 2023, "Quartile": "Q1"}, {"DOI": "10.48161/qaj.v4n3a733", "Cited By Journal": "Journal of Cleaner Production", "Year": 2021, "Quartile": "Q1"}, {"DOI": "10.48161/qaj.v4n3a699", "Cited By Journal": "Mathematics", "Year": 2023, "Quartile": "Q2"}, {"DOI": "10.48161/qaj.v4n3a699", "Cited By Journal": "Egyptian Informatics Journal", "Year": 2022, "Quartile": "Q3"}, {"DOI": "10.48161/qaj.v4n3a699", "Cited By Journal": "Asian Journal of Water", "Year": 2023, "Quartile": "Q4"} ]
 
-if uploaded_file:
-    try:
-        # Load the CSV
-        df = pd.read_csv(uploaded_file, encoding="ISO-8859-1")
-        df.columns = [col.strip().replace("\ufeff", "") for col in df.columns]  # clean BOM
+Convert to DataFrame
 
-        # Step 2: Paste DOIs
-        user_input = st.text_area("Paste DOIs (one per line, with or without 'https://doi.org/'):")
-        user_dois = [
-            doi.strip().replace("https://doi.org/", "") 
-            for doi in user_input.splitlines() if doi.strip()
-        ]
+df = pd.DataFrame(citation_data)
 
-        if user_dois:
-            # Step 3: Filter data based on DOIs
-            filtered_df = df[df['DOI'].isin(user_dois)]
+Streamlit UI
 
-            if not filtered_df.empty:
-                st.subheader("Citing Journals and Quartiles")
-                st.dataframe(filtered_df)
+st.title("Citing Journals Scopus Quartile Checker (Paste DOI List)")
 
-                # Step 4: Quartile Summary
-                citation_counts = filtered_df.groupby("DOI").size().reset_index(name="Citing Scopus Papers")
-                quartile_summary = filtered_df.groupby(["DOI", "Quartile"]).size().reset_index(name="Count")
-                quartile_pivot = quartile_summary.pivot(index="DOI", columns="Quartile", values="Count").fillna(0).astype(int)
-                final_summary = citation_counts.merge(quartile_pivot, on="DOI")
+user_input = st.text_area("Paste DOIs (one per line, with or without 'https://doi.org/'):") user_dois = [doi.strip().replace("https://doi.org/", "") for doi in user_input.splitlines() if doi.strip()]
 
-                st.subheader("Quartile Summary per Article")
-                st.dataframe(final_summary)
+Filter and process
 
-                # Step 5: Download
-                st.download_button("Download Summary CSV", final_summary.to_csv(index=False), file_name="quartile_summary.csv")
-            else:
-                st.warning("None of the provided DOIs were found in the uploaded dataset.")
-        else:
-            st.info("Please paste at least one DOI to continue.")
+if user_dois: filtered_df = df[df['DOI'].isin(user_dois)]
 
-    except Exception as e:
-        st.error(f"Error reading the uploaded file: {e}")
+if not filtered_df.empty:
+    st.subheader("Citing Journals and Quartiles")
+    st.dataframe(filtered_df)
+
+    # Summary
+    citation_counts = filtered_df.groupby("DOI").size().reset_index(name="Citing Scopus Papers")
+    quartile_summary = filtered_df.groupby(["DOI", "Quartile"]).size().reset_index(name="Count")
+    quartile_pivot = quartile_summary.pivot(index="DOI", columns="Quartile", values="Count").fillna(0).astype(int)
+    final_summary = citation_counts.merge(quartile_pivot, on="DOI")
+
+    st.subheader("Quartile Summary per Article")
+    st.dataframe(final_summary)
+
+    st.download_button("Download Summary CSV", final_summary.to_csv(index=False), file_name="quartile_summary.csv")
 else:
-    st.info("Please upload a CSV file first.")
+    st.warning("No matching DOIs found in the internal dataset.")
+
+else: st.info("Paste at least one DOI to begin.")
+
