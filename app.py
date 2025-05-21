@@ -8,15 +8,17 @@ import urllib.parse
 API_KEY = 'c9187cfd41d4c6496be780048b47904e'
 HEADERS = {'X-ELS-APIKey': API_KEY}
 
-st.title("Citing Paper Scopus Check + SCImago Quartile")
+st.title("Citing DOIs → Scopus Journal + SCImago Quartile Checker")
 
-# Input
-user_input = st.text_area("Paste Citing DOIs (e.g., https://doi.org/...)", height=200)
+# User input
+user_input = st.text_area("Paste Citing DOIs (from Google Scholar, Lens, etc.):", height=200)
 doi_list = [d.strip().replace("https://doi.org/", "").replace("http://doi.org/", "") for d in user_input.splitlines() if d.strip()]
 
+# Scopus search (robust)
 @st.cache_data(show_spinner=False)
 def get_scopus_journal(doi):
-    url = f"https://api.elsevier.com/content/search/scopus?query=DOI({doi})&field=source-title"
+    query = f"REF({doi}) OR DOI({doi})"
+    url = f"https://api.elsevier.com/content/search/scopus?query={urllib.parse.quote(query)}&field=source-title"
     r = requests.get(url, headers=HEADERS)
     if r.status_code == 200:
         entries = r.json().get("search-results", {}).get("entry", [])
@@ -24,6 +26,7 @@ def get_scopus_journal(doi):
             return entries[0].get("source-title", "Unknown")
     return None
 
+# SCImago quartile scraping
 @st.cache_data(show_spinner=False)
 def get_quartile_from_scimago(journal_name):
     query = urllib.parse.quote(journal_name)
@@ -47,16 +50,16 @@ def get_quartile_from_scimago(journal_name):
         return "Error"
     return "Unknown"
 
-# Results
+# Main processing
 results = []
 
 if doi_list:
-    with st.spinner("Checking Scopus and SCImago..."):
+    with st.spinner("Looking up citing articles..."):
         for doi in doi_list:
             journal = get_scopus_journal(doi)
-            if journal:
+            if journal and journal != "Unknown":
                 quartile = get_quartile_from_scimago(journal)
-                time.sleep(1)
+                time.sleep(1)  # be polite to SCImago
                 results.append({
                     "Citing DOI": f"https://doi.org/{doi}",
                     "Journal": journal,
@@ -72,8 +75,8 @@ if doi_list:
                 })
 
     df = pd.DataFrame(results)
-    st.subheader("Citing DOIs with Scopus Status & Quartile")
+    st.subheader("Citing DOIs with Journal & Quartile Status")
     st.dataframe(df)
-    st.download_button("Download CSV", df.to_csv(index=False), file_name="citing_quartile_check.csv")
+    st.download_button("Download CSV", df.to_csv(index=False), file_name="citing_dois_scopus_quartile.csv")
 else:
-    st.info("Paste citing DOIs above to begin.")
+    st.info("Paste DOIs that cite your paper to begin.")
