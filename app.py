@@ -69,7 +69,7 @@ def get_quartile_from_scimago(journal_name):
 
 if input_doi:
     base_doi = clean_doi(input_doi)
-    with st.spinner("Getting citing DOIs from OpenAlex..."):
+    with st.spinner("Getting citing DOIs from RedOne..."):
         citing_dois = get_openalex_citers(base_doi)
         if citing_dois:
             quartile_summary = {"Q1": 0, "Q2": 0, "Q3": 0, "Q4": 0, "Unknown": 0}
