@@ -11,7 +11,7 @@ import urllib.parse
 SCOPUS_API_KEY = 'c9187cfd41d4c6496be780048b47904e'
 HEADERS_SCOPUS = {'X-ELS-APIKey': SCOPUS_API_KEY}
 
-st.title("OpenAlex Citation Checker with Scopus + SCImago Quartile")
+st.title("RedOne Citation Checker with Scopus + SCImago Quartile")
 input_doi = st.text_input("Enter the DOI of your article:", placeholder="e.g., https://doi.org/10.xxxx/xxxxx")
 
 def clean_doi(doi):
